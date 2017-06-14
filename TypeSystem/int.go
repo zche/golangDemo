@@ -2,7 +2,7 @@ package main
 
 import "fmt"
 
-//Integer 表示一个整形
+//Integer 表示一个整形。。
 type Integer int
 
 //Less 比较大小

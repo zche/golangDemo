@@ -12,19 +12,19 @@ import (
 )
 
 const (
-	//UPLOAD_DIR 是一个路径
-	UPLOAD_DIR   = "./uploads"
-	TEMPLATE_DIR = "./views"
+	//UploadDir 是一个路径
+	UploadDir = "./uploads"
+	//TemplateDir html模板
+	TemplateDir = "./views"
 )
 
 var templates map[string]*template.Template
 
 func init() {
 	templates = make(map[string]*template.Template)
-	fileInfoArr, err := ioutil.ReadDir(TEMPLATE_DIR)
+	fileInfoArr, err := ioutil.ReadDir(TemplateDir)
 	if err != nil {
 		panic(err)
-		return
 	}
 	var templateName, templatePath string
 	for _, fileInfo := range fileInfoArr {
@@ -32,7 +32,7 @@ func init() {
 		if ext := filepath.Ext(templateName); ext != ".html" {
 			continue
 		}
-		templatePath = TEMPLATE_DIR + "/" + templateName
+		templatePath = TemplateDir + "/" + templateName
 		log.Println("Loading template:", templatePath)
 		t := template.Must(template.ParseFiles(templatePath))
 		tmpl := strings.Split(templateName, ".")[0]
@@ -63,13 +63,24 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		filename := h.Filename
-		defer f.Close()
-		t, err := os.Create(UPLOAD_DIR + "/" + filename)
+		defer func() {
+			errFile := f.Close()
+			if errFile != nil {
+				log.Println("文件关闭时发生错误！")
+			}
+		}()
+		t, err := os.Create(UploadDir + "/" + filename)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		defer t.Close()
+		//defer t.Close()
+		defer func() {
+			errFile := t.Close()
+			if errFile != nil {
+				log.Println("文件关闭时发生错误！")
+			}
+		}()
 		if _, err := io.Copy(t, f); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -80,7 +91,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 func viewHandler(w http.ResponseWriter, r *http.Request) {
 	imageID := r.FormValue("id")
-	imagePath := UPLOAD_DIR + "/" + imageID
+	imagePath := UploadDir + "/" + imageID
 	if exists := isExists(imagePath); !exists {
 		http.NotFound(w, r)
 		return
@@ -98,7 +109,7 @@ func isExists(path string) bool {
 }
 
 func listHandler(w http.ResponseWriter, r *http.Request) {
-	fileInfoArr, err := ioutil.ReadDir(UPLOAD_DIR)
+	fileInfoArr, err := ioutil.ReadDir(UploadDir)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
